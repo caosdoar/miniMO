@@ -2,15 +2,12 @@
 #include "minimo.h"
 #include <avr/io.h>
 
+// Parameters
+#define PARAM_NOISEGEN_FREQ 0
+#define PARAM_NOISEGEN_GRAIN 1
+#define PARAM_NOISEGEN_COUNT 2
+
 static bool control = 1;
-
-// freq control reference
-static bool coarseFreqChange = false;
-static bool potPosFreqRef = 255;
-
-// grain control reference
-static bool coarseGrainChange = false;
-static byte potPosGrainRef = 255;
 
 // Volume input smoothing
 #define NUM_READINGS_EXP 2
@@ -38,14 +35,22 @@ void module_noisegen_setup()
 	OCR0A = 0;				// frequencies down to 3921hz for a value of 255 https://www.easycalculation.com/engineering/electrical/avr-timer-calculator.php
 	TIMSK |= (1 << OCIE0A);	// Enable Interrupt on compare with OCR0A
 	sei();
+
+	minimo_setParamCount(PARAM_NOISEGEN_COUNT);
+	minimo_setParam(PARAM_NOISEGEN_FREQ, 255);
+	minimo_setParam(PARAM_NOISEGEN_GRAIN, 255);
+
+	minimo_prepareProcessInput();
 }
 
 void module_noisegen_loop()
 {
-	if (control) setFrequency(MINIMOPIN_IN0);
-	else setGrainDensity(MINIMOPIN_IN0);
-
-	volumeModulation = minimo_readInputSmooth(1);
+	minimo_processInput();
+	minimo_processParameters();
+	OCR1C = minimo_getParam(PARAM_NOISEGEN_GRAIN);
+	OCR0A = 255 - minimo_getParam(PARAM_NOISEGEN_FREQ);
+	//volumeModulation = minimo_readInputSmooth(1);
+	volumeModulation = minimo_analogInputs[MINIMOIN_AUDIO];
 }
 
 void module_noisegen_timer0_compa()
@@ -73,41 +78,4 @@ byte xorshift32()
 	y32 ^= (y32 >> 5);
 	y32 ^= (y32 << 3);
 	return y32;
-}
-
-void setGrainDensity(int pin)
-{
-	coarseFreqChange = false; // reset the control condition for frequency
-	byte value = analogRead(pin) >> 2;
-	if (!coarseGrainChange)
-	{
-		if (value == potPosGrainRef)
-		{
-			coarseGrainChange = true;
-		}
-	}
-	else
-	{
-		potPosGrainRef = value;
-		OCR1C = value;
-	}
-}
-
-void setFrequency(int pin)
-{
-	coarseGrainChange = false; //reset the control condition for density
-	byte value = analogRead(pin) >> 2;
-	if (!coarseFreqChange)
-	{
-		if (value == potPosFreqRef)
-		{
-			coarseFreqChange = true;
-		}
-	}
-	else
-	{
-		potPosFreqRef = value;
-		//reversing values so that the knob affects it in the same way as the other parameters
-		OCR0A = 255 - value;
-	}
 }

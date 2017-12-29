@@ -174,19 +174,17 @@ void checkVoltage()
 
 void processButton()
 {
+	minimo_button_clickCount = 0;
+
 	if (minimo_button_longClick)
 	{
 		if (digitalRead(MINIMOPIN_BUTTON) == LOW)
 		{
-			minimo_button_clickCount = 0;
 			minimo_button_longClick = false;
 		}
 	}
 	else
 	{
-		// Reset click state
-		minimo_button_clickCount = 0;
-
 		// Only process if the button is pressed at this time
 		if(digitalRead(MINIMOPIN_BUTTON) == HIGH)
 		{

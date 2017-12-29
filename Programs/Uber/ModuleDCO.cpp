@@ -2,6 +2,11 @@
 #include "minimo.h"
 #include "wavegen.h"
 
+// Parameters
+#define PARAM_DCO_FREQ 0
+#define PARAM_DCO_VOLUME 1
+#define PARAM_DCO_COUNT 2
+
 // Sensor reading
 static int sensorValue = 0;
 static int sensorMin;
@@ -9,15 +14,10 @@ static int sensorMax;
 static bool sensorCalibrating = false;
 
 // Volume data
-static bool volumeInSync = true;
-static byte volumeSyncValue = 7;
-static byte volumeFromKnob = 0;
 static byte volumeFromInput = 0;
 static byte volume = 0;
 
 // Frequency data
-static bool freqInSync = true;
-static byte freqSyncValue = 255;
 static int frequency = 0;
 static byte freqRangeIndex = 1;
 static int freqRangeMin = 0;
@@ -34,6 +34,12 @@ void dco_setWave(int wave);
 
 void module_dco_setup()
 {
+	minimo_setParamCount(PARAM_DCO_COUNT);
+	minimo_setParam(PARAM_DCO_VOLUME, 255);
+	minimo_setParam(PARAM_DCO_FREQ, 255);
+
+	minimo_prepareProcessInput();
+
 	cli();
 	//Timer Interrupt Generation -timer 0
 	TCCR0A = (1 << WGM01) | (1 << WGM00);	// fast PWM
@@ -41,7 +47,6 @@ void module_dco_setup()
 	TIMSK  |= (1 << TOIE0);					// Enable Interrupt on overflow
 	sei();
 
-	volumeFromKnob = 255;
 	volumeFromInput = 255;
 
 	freqRangeIndex = 1;
@@ -57,18 +62,20 @@ void module_dco_setup()
 void module_dco_loop()
 {
 	dco_processButton();
+	minimo_processInput();
+	minimo_processParameters();
 
-	if (minimo_buttonDown)
+	if (minimo_paramIndex == PARAM_DCO_FREQ)
 	{
-		dco_setVolume(MINIMOPIN_IN0);
-	}
-	else
-	{
-		dco_setFrequency(MINIMOPIN_IN0);
+		// TODO: Hack
+		int value = minimo_getParam(PARAM_DCO_FREQ) << 2;
+		frequency = minimo_mapCalibratedInput(value, freqRangeMin, freqRangeMax);
 	}
 	
-	volumeFromInput = minimo_readInputSmooth(1);
-	volume = (volumeFromKnob * volumeFromInput) >> 8;
+	// TODO: Smoothing in new way to read inputs
+	//volumeFromInput = minimo_readInputSmooth(1);
+	volumeFromInput = 255;
+	volume = (minimo_getParam(PARAM_DCO_VOLUME) * volumeFromInput) >> 8;
 }
 
 void module_dco_timer0_compa()
@@ -92,15 +99,13 @@ void dco_processButton()
 	{
 		if (minimo_button_clickCount == 1)
 		{
-			++waveIndex;
-			if (waveIndex == 5) waveIndex = 0;
-			dco_setWave(waveIndex);
+			minimo_cycleCurrentParam();
 		}
 		else if (minimo_button_clickCount == 2)
 		{
-			++freqRangeIndex;
-			if (freqRangeIndex == 3) freqRangeIndex = 0;
-			dco_setFrequencyRange(freqRangeIndex);
+			++waveIndex;
+			if (waveIndex == 5) waveIndex = 0;
+			dco_setWave(waveIndex);
 		}
 		else if (minimo_button_clickCount == 3)
 		{
@@ -108,69 +113,13 @@ void dco_processButton()
 		}
 	}
 	else
-	{
-
-	}
-	/*while (minimo_buttonDown == 1)
-	{
-		++buttonDelay;
-		_delay_ms(10);
-		if (button_delay > 10 & !buttonDoubleClick)
+	{ 
+		if (minimo_button_clickCount == 1)
 		{
-			buttonLongPress = true;
-			minimo_flashLed(1);
-			setVolume(MINIMOPIN_IN0);
+			++freqRangeIndex;
+			if (freqRangeIndex == 3) freqRangeIndex = 0;
+			dco_setFrequencyRange(freqRangeIndex);
 		}
-	}
-
-	buttonDoubleClick = false;
-	if (buttonDelay > 0)
-	{
-		bool hold = true;
-		while (hold)
-		{
-			bool prevInputValue = minimo_buttonDown;
-			_delay_ms(1);
-			button_delay
-		}
-	}*/
-}
-
-void dco_setVolume(int pin)
-{
-	freqInSync = false;
-
-	byte value = analogRead(pin) >> 2;
-	if (!volumeInSync)
-	{
-		if (value == volumeSyncValue)
-		{
-			volumeInSync = true;
-		}
-	}
-	else
-	{
-		volumeSyncValue = value;
-		volumeFromKnob = value;
-	}
-}
-
-void dco_setFrequency(int pin)
-{
-	volumeInSync = false;
-
-	byte value = analogRead(pin) >> 2;
-	if (!freqInSync)
-	{
-		if (value == freqSyncValue)
-		{
-			freqInSync = true;
-		}
-	}
-	else
-	{
-		freqSyncValue = value;
-		frequency = minimo_mapCalibratedInput(value, freqRangeMin, freqRangeMax);
 	}
 }
 
