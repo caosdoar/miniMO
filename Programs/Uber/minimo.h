@@ -25,7 +25,8 @@ MiniMO Uber shared functionality
 // MiniMO Module types
 #define MINIMOMOD_DCO 0
 #define MINIMOMOD_NOISEGEN 1
-#define MINIMOMOD_COUNT 2
+#define MINIMOMOD_SEQUENCER 2
+#define MINIMOMOD_COUNT 3
 
 // Analog inputs
 extern byte minimo_analogInputs[2];

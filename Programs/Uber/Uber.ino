@@ -7,6 +7,7 @@
 // Modules
 #include "ModuleDCO.h"
 #include "ModuleNoiseGen.h"
+#include "ModuleSequencer.h"
 
 #define MINIMO_CLICK_GAP_MILLIS 200
 #define MINIMO_CLICK_LONG_MILLIS 400
@@ -34,6 +35,7 @@ void loop()
 		{
 			case MINIMOMOD_DCO: module_dco_loop(); break;
 			case MINIMOMOD_NOISEGEN: module_noisegen_loop(); break;
+			case MINIMOMOD_SEQUENCER: module_seq_loop(); break;
 		}
 	}
 }
@@ -44,6 +46,7 @@ ISR(TIMER0_COMPA_vect)
 	{
 		case MINIMOMOD_DCO: module_dco_timer0_compa(); break;
 		case MINIMOMOD_NOISEGEN: module_noisegen_timer0_compa(); break;
+		case MINIMOMOD_SEQUENCER: module_seq_timer0_compa(); break;
 	}
 }
 
@@ -53,6 +56,7 @@ ISR(TIMER0_OVF_vect)
 	{
 		case MINIMOMOD_DCO: module_dco_timer0_ovf(); break;
 		case MINIMOMOD_NOISEGEN: module_noisegen_timer0_ovf(); break;
+		case MINIMOMOD_SEQUENCER: module_seq_timer0_ovf(); break;
 	}
 }
 
@@ -64,6 +68,7 @@ ISR(PCINT0_vect)
 	{
 		case MINIMOMOD_DCO: module_dco_pcint0(); break;
 		case MINIMOMOD_NOISEGEN: module_noisegen_pcint0(); break;
+		case MINIMOMOD_SEQUENCER: module_seq_pcint0(); break;
 	}
 }
 
@@ -120,6 +125,7 @@ void setupModule()
 	{
 		case MINIMOMOD_DCO: module_dco_setup(); break;
 		case MINIMOMOD_NOISEGEN: module_noisegen_setup(); break;
+		case MINIMOMOD_SEQUENCER: module_seq_setup(); break;
 	}
 }
 
