@@ -27,8 +27,6 @@ static unsigned int phase = 0;
 static byte waveIndex = 0;
 
 void dco_processButton();
-void dco_setVolume(int pin);
-void dco_setFrequency(int pin);
 void dco_setFrequencyRange(int rangeIndex);
 void dco_setWave(int wave);
 
